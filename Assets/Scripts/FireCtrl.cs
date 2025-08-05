@@ -16,7 +16,7 @@ public class FireCtrl : MonoBehaviour
     private void Update()
     {
         // 마우스 왼쪽 버튼 클릭 시 총알 발사
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButton(0))
         {
             Fire();
         }
