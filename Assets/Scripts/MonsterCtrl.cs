@@ -46,8 +46,17 @@ public class MonsterCtrl : MonoBehaviour
     // 스크립트가 활성화 될 때마다 호출되는 함수
     private void OnEnable()
     {
+        // 몬스터의 상태를 Idle로 초기화
+        _state = State.Idle;
+
         // 이벤트 발생 시 수행할 함수 연결
         PlayerCtrl.OnPlayerDie += this.OnPlayerDie;
+
+        // 몬스터의 상태를 체크하는 코루틴 함수 호출
+        StartCoroutine(CheckMonsterState());
+
+        // 상태에 따라 몬스터의 행동을 수행하는 코루틴 함수 호출
+        StartCoroutine(MonsterAction());
     }
 
     // 스크립트가 비활성화 될 때마다 호출되는 함수
@@ -57,7 +66,7 @@ public class MonsterCtrl : MonoBehaviour
         PlayerCtrl.OnPlayerDie -= this.OnPlayerDie;
     }
 
-    private void Start()
+    private void Awake()
     {
         // 몬스터의 Transform 할당
         _monsterTr = GetComponent<Transform>();
@@ -67,6 +76,8 @@ public class MonsterCtrl : MonoBehaviour
 
         // NaveMaeshAgent 컴포넌트 할당
         _agent = GetComponent<NavMeshAgent>();
+        // NavMeshAgent의 자동 회전 기능 비활성화
+        _agent.updateRotation = false;
 
         // Animator 컴포넌트 할당
         _anim = GetComponent<Animator>();
@@ -76,12 +87,20 @@ public class MonsterCtrl : MonoBehaviour
 
         // 추적 대상의 위치를 설정하면 바로 추적 시작
         //_agent.SetDestination(_playerTr.position);
+    }
 
-        // 몬스터의 상태를 체크하는 코루틴 함수 호출
-        StartCoroutine(CheckMonsterState());
-
-        // 상태에 따라 몬스터의 행동을 수행하는 코루틴 함수 호출
-        StartCoroutine(MonsterAction());
+    private void Update()
+    {
+        // 목적지까지 남은 거리로 회전 여부 판단
+        if (_agent.remainingDistance >= 2.0f)
+        {
+            // 에이전트의 이동 방향 
+            Vector3 direction = _agent.desiredVelocity;
+            // 회전 각도(쿼터니언 산출)
+            Quaternion rot = Quaternion.LookRotation(direction);
+            // 구면 선형보간 함수로 부드러운 회전 처리
+            _monsterTr.rotation = Quaternion.Slerp(_monsterTr.rotation, rot, Time.deltaTime * 10.0f);
+        }
     }
 
     /// <summary>
@@ -165,6 +184,19 @@ public class MonsterCtrl : MonoBehaviour
                     _anim.SetTrigger(_hashDie);
                     // 몬스터의 collider 컴포넌트 비활성화
                     GetComponent<Collider>().enabled = false;
+
+                    // 일정 시간 대기 후 오브젝트 풀링으로 환원
+                    yield return new WaitForSeconds(3.0f);
+
+                    // 사망 후 다시 사용할 때를 위해 hp 값 초기화
+                    _hp = 100;
+                    _isDie = false;
+
+                    // 몬스터의 Collider 컴포넌트 활성화
+                    GetComponent<Collider>().enabled = true;
+                    // 몬스터를 비활성화
+                    this.gameObject.SetActive(false);
+                    
                     break;
 
                 default:
@@ -195,7 +227,32 @@ public class MonsterCtrl : MonoBehaviour
             if (_hp <= 0)
             {
                 _state = State.Die;
+                // 몬스터가 사망했을 때 50점을 추가
+                GameManager.Instance.DisplayScore(50);
             }
+        }
+    }
+
+    /// <summary>
+    /// 레이캐스트를 사용해 데미지를 입히는 로직
+    /// </summary>
+    /// <param name="pos"></param>
+    /// <param name="normal"></param>
+    public void OnDamage(Vector3 pos, Vector3 normal)
+    {
+        _anim.SetTrigger(_hashHit);
+        Quaternion rot = Quaternion.LookRotation(normal);
+
+        // 혈흔 효과를 생성하는 함수 호출
+        ShowBloodEffect(pos, rot);
+
+        // 몬스터의 hp 차감
+        _hp -= 30;
+        if (_hp <= 0)
+        {
+            _state = State.Die;
+            // 몬스터가 사망했을 때 50점을 추가
+            GameManager.Instance.DisplayScore(50);
         }
     }
 

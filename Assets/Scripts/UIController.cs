@@ -1,12 +1,13 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class UIController : MonoBehaviour
 {
-    // ¹öÆ°À» ¿¬°áÇÒ º¯¼ö
+    // ë²„íŠ¼ì„ ì—°ê²°í•  ë³€ìˆ˜
     [SerializeField] Button _startButton;
     [SerializeField] Button _optionButton;
     [SerializeField] Button _shopButton;
@@ -15,23 +16,29 @@ public class UIController : MonoBehaviour
 
     private void Start()
     {
-        // UnityActionÀ» »ç¿ëÇÑ ÀÌº¥Æ® ¿¬°á ¹æ½Ä1
+        // UnityActionì„ ì‚¬ìš©í•œ ì´ë²¤íŠ¸ ì—°ê²° ë°©ì‹1
         _action = () => OnButtonClick(_startButton.name);
         _startButton.onClick.AddListener(_action);
 
-        // ¹«¸í ¸Þ¼­µå¸¦ È°¿ëÇÑ ÀÌº¥Æ® ¿¬°á ¹æ½Ä
+        // ë¬´ëª… ë©”ì„œë“œë¥¼ í™œìš©í•œ ì´ë²¤íŠ¸ ì—°ê²° ë°©ì‹
         _optionButton.onClick.AddListener(delegate
         { 
             OnButtonClick(_optionButton.name); 
         }
         );
 
-        // ¶÷´Ù½ÄÀ» È°¿ëÇÑ ÀÌº¥Æ® ¿¬°á ¹æ½Ä
+        // ëžŒë‹¤ì‹ì„ í™œìš©í•œ ì´ë²¤íŠ¸ ì—°ê²° ë°©ì‹
         _shopButton.onClick.AddListener(() => OnButtonClick(_shopButton.name));
     }
 
     public void OnButtonClick(string msg)
     {
         Debug.Log($"Click Button : {msg}");
+    }
+
+    public void OnStartClick()
+    {
+        SceneManager.LoadScene("Level_01");
+        SceneManager.LoadScene("Play", LoadSceneMode.Additive);
     }
 }

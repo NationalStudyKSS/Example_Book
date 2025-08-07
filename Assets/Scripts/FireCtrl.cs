@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// 반드시 필요한 컴포넌트를 명시해 해당 컴포넌트가 삭제되는 것을 방지하는 어트리뷰트
 [RequireComponent(typeof(AudioSource))]
 public class FireCtrl : MonoBehaviour
 {
@@ -18,6 +19,9 @@ public class FireCtrl : MonoBehaviour
     [SerializeField] MeshRenderer _muzzleFlash;
     [SerializeField] Light _light;
 
+    // Raycast 결과값을 저장하기 위한 구조체 선언
+    [SerializeField] RaycastHit _hit;
+
     private void Start()
     {
         _audio = GetComponent<AudioSource>();
@@ -31,17 +35,27 @@ public class FireCtrl : MonoBehaviour
 
     private void Update()
     {
+        // Ray를 시각정그로 표시하기 위해 사용
+        Debug.DrawRay(_firePos.position, _firePos.forward * 10.0f, Color.green);
+
         // 마우스 왼쪽 버튼 클릭 시 총알 발사
         if (Input.GetMouseButtonDown(0))
         {
             Fire();
+
+            // Ray를 발사
+            if (Physics.Raycast(_firePos.position, _firePos.forward, out _hit, 10.0f, 1 << 6))
+            {
+                Debug.Log($"hit = {_hit.collider.name}");
+                _hit.transform.GetComponent<MonsterCtrl>()?.OnDamage(_hit.point, _hit.normal);
+            }
         }
     }
 
     void Fire()
     {
         // Bullet 프리펩을 동적으로 생성(생성할 객체, 위치, 회전)
-        Instantiate(_bullet, _firePos.position, _firePos.rotation);
+        //Instantiate(_bullet, _firePos.position, _firePos.rotation);
         // 총소리 발생
         _audio.PlayOneShot(_fireSfx, 0.7f);
         // 총구 화염 효과 코루틴 함수 호출
